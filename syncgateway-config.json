@@ -1,0 +1,22 @@
+{
+ "logging": {
+    "console": {
+      "log_keys": ["*"]
+    }
+  },
+
+     "databases": {
+    "mtdaps": {
+      "server": "http://127.0.0.1:8091",
+       "bucket":"mtdaps",
+       "username":"mtdaps",
+        "password":"mtdaps",
+        "use_views": true,
+       "enable_shared_bucket_access":true,
+      "import_docs":"continuous",
+       "num_index_replicas":0,
+      "users": {"GUEST": {"disabled": false, "admin_channels": ["*"]}},
+      "sync": "function (doc, oldDoc) {if (doc.sdk) {channel(doc.sdk);}}"
+}
+}
+}
