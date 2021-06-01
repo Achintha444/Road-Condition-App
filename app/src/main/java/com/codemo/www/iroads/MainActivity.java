@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
-import android.hardware.Sensor;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -21,20 +20,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.BottomNavigationView;
-import android.support.design.widget.NavigationView;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationView;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -352,7 +351,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         checkUpdates();
 
         if (checkAndRequestPermissions()) {
-            saveDeviceId();
+             saveDeviceId();
         }
 
         api = PathsenseLocationProviderApi.getInstance(getApplicationContext());
@@ -368,15 +367,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public void saveDeviceId() {
-        String serial = Build.SERIAL;
-        Log.d("TAG", "inside DeviceID");
+        String serial = Settings.Secure.ANDROID_ID;
+
+        /* Build.getSerial() is restricted from Android 10 due to privacy issues therefore used ANDROID_ID */
+
+        /*Log.d("TAG", "inside DeviceID");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
                 return;
             }
-            serial = Build.getSerial();
-        }
+
+            //serial = Build.getSerial();
+
+            serial = Settings.Secure.ANDROID_ID;
+        }*/
+
         String device_name = Build.BRAND + " " + Build.MODEL;
         Log.d("TAG", "Device properties: " + device_name + " " + serial);
         SensorData.setDeviceId(String.valueOf(serial.hashCode()));
@@ -789,7 +795,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void explain(String msg) {
-        final android.support.v7.app.AlertDialog.Builder dialog = new android.support.v7.app.AlertDialog.Builder(this);
+        final androidx.appcompat.app.AlertDialog.Builder dialog = new androidx.appcompat.app.AlertDialog.Builder(this);
         dialog.setMessage(msg)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
