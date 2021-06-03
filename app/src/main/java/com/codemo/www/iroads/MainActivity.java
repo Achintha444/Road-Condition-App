@@ -368,20 +368,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void saveDeviceId() {
         String serial = Settings.Secure.ANDROID_ID;
-
         /* Build.getSerial() is restricted from Android 10 due to privacy issues therefore used ANDROID_ID */
-
-        /*Log.d("TAG", "inside DeviceID");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                return;
-            }
-
-            //serial = Build.getSerial();
-
-            serial = Settings.Secure.ANDROID_ID;
-        }*/
 
         String device_name = Build.BRAND + " " + Build.MODEL;
         Log.d("TAG", "Device properties: " + device_name + " " + serial);

@@ -8,6 +8,7 @@
         android:checkableBehavior="single">
         <item
             android:id="@+id/nav_home"
+            android:checked="true"
             android:icon="@drawable/nav_home"
             android:title="Home" />
         <item
@@ -29,6 +30,8 @@
         <item
             android:id="@+id/nav_help"
             android:title="About" />
+
     </group>
+
 
 </menu>
