@@ -2,17 +2,18 @@ package com.codemo.www.iroads;
 
 import android.content.Intent;
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 public class SplashScreen extends AppCompatActivity {
 
     ImageView welcome;
-    TextView name, codemo, presents;
+    TextView name;
 
     Animation level1;
     Animation level2;
@@ -34,19 +35,21 @@ public class SplashScreen extends AppCompatActivity {
             @Override
             public void onAnimationStart(Animation animation) {
 
+
             }
 
             @Override
             public void onAnimationEnd(Animation animation) {
+/*                if (!isLocationEnabled()) {
+                    showAlert();
+                }*/
                 finish();
                 Intent i = new Intent(SplashScreen.this, MainActivity.class);
                 startActivity(i);
-
             }
 
             @Override
             public void onAnimationRepeat(Animation animation) {
-
             }
         });
     }
