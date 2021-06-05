@@ -25,7 +25,8 @@
             android:layout_margin="@dimen/fab_margin"
             android:layout_gravity="end"
             app:fabSize="mini"
-            app:srcCompat="@drawable/ic_my_location_black" />
+            app:srcCompat="@drawable/ic_my_location_black"
+            android:tooltipText="Current Location"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/infoBtn"
@@ -37,7 +38,8 @@
             android:layout_marginLeft="16dp"
             android:layout_gravity="end"
             app:fabSize="mini"
-            app:srcCompat="@drawable/ic_info" />
+            app:srcCompat="@drawable/ic_info"
+            android:tooltipText="More Information"/>
 
     </LinearLayout>
 
