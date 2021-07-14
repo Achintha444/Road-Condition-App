@@ -16,11 +16,11 @@
         android:orientation="horizontal"
         android:weightSum="12">
 
-        <android.support.v7.widget.Toolbar
+        <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="6"
+            android:layout_weight="8"
             android:background="@android:color/transparent"
             android:theme="@style/AppTheme.AppBarOverlay"
             app:popupTheme="@style/AppTheme.PopupOverlay"
@@ -43,13 +43,15 @@
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="2">
+            android:layout_weight="0"
+            android:visibility="gone">
 
             <ImageButton
                 android:id="@+id/obdBtn"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/transparent"
+                android:tooltipText="Bluetooth"
                 app:srcCompat="@drawable/ic_directions_car_black" />
 
             <ProgressBar
@@ -71,6 +73,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/transparent"
+                android:tooltipText="Save Progress"
                 app:srcCompat="@drawable/ic_save_black" />
 
             <ProgressBar

@@ -1,5 +1,6 @@
 package com.codemo.www.iroads;
 
+import android.Manifest;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
@@ -12,7 +13,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
-import android.hardware.Sensor;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -21,20 +21,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.BottomNavigationView;
-import android.support.design.widget.NavigationView;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -44,6 +30,19 @@ import android.view.animation.Animation;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.codemo.www.iroads.Database.DatabaseHandler;
 import com.codemo.www.iroads.Database.SensorData;
@@ -59,6 +58,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationView;
 import com.pathsense.android.sdk.location.PathsenseLocationProviderApi;
 import com.vatichub.obd2.OBD2CoreConfiguration;
 import com.vatichub.obd2.OBD2CoreConstants;
@@ -96,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private static final int REQUEST_CONNECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT_PLUS_CONNECT_DEVICE = 5;
     private static final String TAG = "MainActivity";
+    static int counter_for_obd_data_visualize = 0;
     private static boolean replicationStopped = true;
     private static ProgressBar spinnerObd;
     private static ProgressBar spinnerSave;
@@ -106,6 +108,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private static MainActivity activity;
     private static int counter;
     private static int checkCounter;
+    private final long UPDATE_INTERVAL = 2 * 1000;  /* 10 secs */
+    private final long FASTEST_INTERVAL = 2000; /* 2 sec */
+    private final boolean inHome = true;
     private FragmentManager manager;
     private FragmentTransaction transaction;
     private MapFragment mapFragment;
@@ -114,8 +119,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private LocationManager mLocationManager;
     private LocationRequest mLocationRequest;
     private com.google.android.gms.location.LocationListener listener;
-    private long UPDATE_INTERVAL = 2 * 1000;  /* 10 secs */
-    private long FASTEST_INTERVAL = 2000; /* 2 sec */
     private LocationManager locationManager;
     private BluetoothAdapter mBluetoothAdapter;
     private IroadsConfiguration gconfigs;
@@ -184,7 +187,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private Menu mainMenu;
     private Context context;
     private BottomNavigationView navigation;
-    private boolean inHome = true;
     private Icon homeIcon;
     private Thread fakethread;
     private DatabaseHandler dbHandler;
@@ -213,17 +215,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         saveBtn.setEnabled(true);
     }
 
-    @SuppressLint("WrongConstant")
-    private void blinkEffect() {
-        ObjectAnimator anim = ObjectAnimator.ofInt(activeBtn, "alpha", Color.TRANSPARENT, Color.WHITE, Color.WHITE,
-                Color.TRANSPARENT);
-        anim.setDuration(2000);
-        anim.setEvaluator(new ArgbEvaluator());
-        anim.setRepeatMode(Animation.REVERSE);
-        anim.setRepeatCount(Animation.INFINITE);
-        anim.start();
-    }
-
     public static boolean isAutoSaveON() {
         return autoSaveON;
     }
@@ -238,6 +229,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public static void setCheckCounter(int checkCounter) {
         MainActivity.checkCounter = checkCounter;
+    }
+
+    @SuppressLint("WrongConstant")
+    private void blinkEffect() {
+        ObjectAnimator anim = ObjectAnimator.ofInt(activeBtn, "alpha", Color.TRANSPARENT, Color.WHITE, Color.WHITE,
+                Color.TRANSPARENT);
+        anim.setDuration(2000);
+        anim.setEvaluator(new ArgbEvaluator());
+        anim.setRepeatMode(Animation.REVERSE);
+        anim.setRepeatCount(Animation.INFINITE);
+        anim.start();
     }
 
     @Override
@@ -283,7 +285,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
         checkLocation();
-
         gconfigs = IroadsConfiguration.getInstance();
         gconfigs.initApplicationSettings(this, mHandler);
         context = this;
@@ -368,15 +369,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public void saveDeviceId() {
-        String serial = Build.SERIAL;
-        Log.d("TAG", "inside DeviceID");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                return;
-            }
-            serial = Build.getSerial();
-        }
+        String serial = Settings.Secure.ANDROID_ID;
+        /* Build.getSerial() is restricted from Android 10 due to privacy issues therefore used ANDROID_ID */
+
         String device_name = Build.BRAND + " " + Build.MODEL;
         Log.d("TAG", "Device properties: " + device_name + " " + serial);
         SensorData.setDeviceId(String.valueOf(serial.hashCode()));
@@ -421,9 +416,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     checkUpdates();
                     setCheckCounter(0);
                 }
-                if (GraphFragment.isStarted()){
+                if (GraphFragment.isStarted()) {
                     activeBtn.setVisibility(View.VISIBLE);
-                }else{
+                } else {
                     activeBtn.setVisibility(View.INVISIBLE);
                 }
                 if (isAutoSaveON() && isInternetAvailable()) {
@@ -443,7 +438,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 if (isReplicationStopped()) {
                     stopSaving();
                 }
-                handler.postDelayed(handlerTask, 5000);
+                handler.postDelayed(handlerTask, 1000);
             }
         };
         handlerTask.run();
@@ -483,39 +478,49 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void showAlert() {
-        if(dialog != null){
-            if(dialog.isShowing()){
+        if (dialog != null) {
+            if (dialog.isShowing()) {
                 return;
             }
         }
         dialogBuilder = new AlertDialog.Builder(this)
                 .setTitle("Enable Location")
                 .setMessage("To continue, Please turn on device location.")
-                .setPositiveButton("Location Settings", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-
-                        Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                        startActivity(myIntent);
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-
-                    }
-                });
+                .setPositiveButton("Location Settings", null);
         dialogBuilder.setCancelable(false);
+        dialog = dialogBuilder.create();
         try {
+            Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    while (!isLocationEnabled()) {
+                        Log.println(Log.INFO, "SPLASH", "THREAD CHECK 1");
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    dialog.dismiss();
+                }
+            };
             dialog = dialogBuilder.show();
-        }catch (Exception e){
-            Log.d(TAG, "Exception occured"+e.getMessage());
+            thread.start();
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivity(myIntent);
+                }
+            });
+        } catch (Exception e) {
+            Log.d(TAG, "Exception occured" + e.getMessage());
         }
     }
 
     private boolean isLocationEnabled() {
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
     }
 
@@ -607,6 +612,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         Log.d("ActivityResult=====", "Result received=======================================" + resultCode);
         switch (requestCode) {
             case REQUEST_CONNECT_DEVICE:
@@ -652,22 +658,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    static int counter_for_obd_data_visualize = 0;
-
     @Override
     public void receiveOBD2Event(OBD2Event e) {
         try {
-            Log.d("obdff","obdff "+e.getEventData());
-            Log.d("obdff","obdff1 "+ e.getEventData().getJSONObject("obd2_real_time_data"));
-            Log.d("obdff","obdff3 "+e.getEventData());
-            Log.d("obdff","obdff4 "+e.getEventData());
+            Log.d("obdff", "obdff " + e.getEventData());
+            Log.d("obdff", "obdff1 " + e.getEventData().getJSONObject("obd2_real_time_data"));
+            Log.d("obdff", "obdff3 " + e.getEventData());
+            Log.d("obdff", "obdff4 " + e.getEventData());
 
             JSONObject realTimedata = e.getEventData().getJSONObject("obd2_real_time_data");
             JSONObject speedObject = realTimedata.getJSONObject("obd2_speed");
-            Log.d("obdff","obdff2 "+realTimedata);
+            Log.d("obdff", "obdff2 " + realTimedata);
 
             JSONObject rpmObject = realTimedata.getJSONObject("obd2_engine_rpm");
-            Log.d("obdff","obdff2 "+realTimedata.getJSONObject("obd2_speed"));
+            Log.d("obdff", "obdff2 " + realTimedata.getJSONObject("obd2_speed"));
 
             Double speed = speedObject.getDouble("value");
             Double rpm = rpmObject.getDouble("value");
@@ -676,10 +680,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             HomeController.updateOBD2Data(speed.intValue(), rpm.intValue());
 
             //Todo notify UI with Toasts...
-            counter_for_obd_data_visualize +=1;
-            if(counter_for_obd_data_visualize==50){
+            counter_for_obd_data_visualize += 1;
+            if (counter_for_obd_data_visualize == 50) {
                 counter_for_obd_data_visualize = 0;
-                Toast.makeText(getApplicationContext(),"OBD SPEED : "+speed+"\n"+ "OBD RPM : "+rpm+"\n"+"Longitude :"+SensorData.getMlon()+" \n"+"Latitude :"+ SensorData.getMlat()+"\n"+"gpsSpeed : "+MobileSensors.getGpsSpeed(),Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "OBD SPEED : " + speed + "\n" + "OBD RPM : " + rpm + "\n" + "Longitude :" + SensorData.getMlon() + " \n" + "Latitude :" + SensorData.getMlat() + "\n" + "gpsSpeed : " + MobileSensors.getGpsSpeed(), Toast.LENGTH_SHORT).show();
 
             }
 
@@ -728,12 +732,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+                                           String[] permissions, int[] grantResults) {
+        //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case 1: {
                 Map<String, Integer> perms = new HashMap<>();
-                perms.put(android.Manifest.permission.READ_PHONE_STATE, PackageManager.PERMISSION_GRANTED);
-                perms.put(android.Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
+                perms.put(Manifest.permission.READ_PHONE_STATE, PackageManager.PERMISSION_GRANTED);
+                perms.put(Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
 //                perms.put(android.Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
 
                 // Fill with actual results from user
@@ -742,18 +748,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         perms.put(permissions[i], grantResults[i]);
                     // Check for both permissions
                     if (
-                            perms.get(android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED &&
-                                    perms.get(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                            perms.get(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED &&
+                                    perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 //                            && perms.get(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                            ) {
+                    ) {
                         Log.d(TAG, "phone & location services permission granted");
                     } else {
                         Log.d(TAG, "Some permissions are not granted ask again ");
                         if (
-                                ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.READ_PHONE_STATE) ||
-                                        ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                                ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_PHONE_STATE) ||
+                                        ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)
 //                              ||  ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                                ) {
+                        ) {
                             showDialogOK("Some Permissions are required to use this application",
                                     new DialogInterface.OnClickListener() {
                                         @Override
@@ -789,7 +795,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void explain(String msg) {
-        final android.support.v7.app.AlertDialog.Builder dialog = new android.support.v7.app.AlertDialog.Builder(this);
+        final androidx.appcompat.app.AlertDialog.Builder dialog = new androidx.appcompat.app.AlertDialog.Builder(this);
         dialog.setMessage(msg)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
@@ -815,7 +821,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             drawer.closeDrawer(GravityCompat.START);
         } else {
             showExitAlert();
-//            super.onBackPressed();
+            // super.onBackPressed();
         }
     }
 
@@ -866,8 +872,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public void checkUpdates() {
-        if(!isUpdateChecked()){
-            if(isInternetAvailable()) {
+        if (!isUpdateChecked()) {
+            if (isInternetAvailable()) {
                 AppUpdater appUpdater = new AppUpdater(this)
                         .setButtonDoNotShowAgain(null);
                 appUpdater.start();
@@ -878,8 +884,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     class BTConnectAttemptTask extends TimerTask {
 
-        private String address;
-        private Timer scheduler;
+        private final String address;
+        private final Timer scheduler;
 
         public BTConnectAttemptTask(String address, Timer scheduler) {
             this.address = address;
