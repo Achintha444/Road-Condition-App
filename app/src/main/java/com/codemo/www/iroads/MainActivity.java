@@ -438,7 +438,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 if (isReplicationStopped()) {
                     stopSaving();
                 }
-                handler.postDelayed(handlerTask, 5000);
+                handler.postDelayed(handlerTask, 1000);
             }
         };
         handlerTask.run();
